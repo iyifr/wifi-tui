@@ -1,0 +1,16 @@
+[package]
+name = "wifi-tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# TUI framework - the only allowed UI dependency
+ratatui = "0.29"
+crossterm = "0.28"  # ratatui backend for cross-platform terminal
+
+# Structured logging - required by assessment
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(windows)'.dependencies]
+# No external Windows crates - using raw FFI to wlanapi.dll
