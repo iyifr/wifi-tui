@@ -4,7 +4,7 @@
 //! Displays SSID, signal strength, channel, and security protocol.
 //!
 //! Platform implementations:
-//! - macOS: Uses airport command (CoreWLAN needs objc runtime)
+//! - macOS: airport command (see ffi.md for why not CoreWLAN)
 //! - Linux: Uses iw command (nl80211 too complex without crates)
 //! - Windows: Raw FFI to wlanapi.dll (Native WiFi API)
 
@@ -17,8 +17,6 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::prelude::*;
-use tracing::{error, info};
-use tracing_subscriber::{fmt, EnvFilter};
 
 mod app;
 mod ui;
@@ -27,38 +25,18 @@ use app::App;
 use wifi_tui::scanner;
 
 fn main() -> io::Result<()> {
-    // Initialize tracing with env filter (RUST_LOG=debug for verbose)
-    init_tracing();
+    // Note: We don't initialize tracing to stdout because it would corrupt the TUI.
+    // All logging goes through app.log_buffer and is displayed in the TUI log panel.
 
-    info!(
-        platform = std::env::consts::OS,
-        "Starting WiFi TUI"
-    );
+    // Set up panic hook to restore terminal on crash
+    let original_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        let _ = disable_raw_mode();
+        let _ = stdout().execute(LeaveAlternateScreen);
+        original_hook(panic_info);
+    }));
 
-    // Run the TUI application
-    let result = run_app();
-
-    // Log exit status
-    match &result {
-        Ok(()) => info!("Application exited normally"),
-        Err(e) => error!(error = %e, "Application exited with error"),
-    }
-
-    result
-}
-
-/// Initialize tracing subscriber for structured logging
-fn init_tracing() {
-    // Use RUST_LOG env var, default to info level
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("wifi_tui=info"));
-
-    fmt()
-        .with_env_filter(filter)
-        .with_target(true)
-        .with_file(true)
-        .with_line_number(true)
-        .init();
+    run_app()
 }
 
 /// Main application loop
@@ -98,14 +76,15 @@ fn run_app() -> io::Result<()> {
             if let Event::Key(key) = event::read()? {
                 // Only handle key press events (not release)
                 if key.kind == KeyEventKind::Press {
-                    // Handle Ctrl+C for quit
-                    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+                    // Handle Ctrl+C for quit (check both 'c' and 'C' for compatibility)
+                    if key.modifiers.contains(KeyModifiers::CONTROL)
+                        && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C')) {
                         app.quit();
                         continue;
                     }
 
                     match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => {
+                        KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => {
                             app.quit();
                         }
                         KeyCode::Char('r') => {

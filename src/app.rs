@@ -8,8 +8,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use tracing::{error, info, instrument};
-
 use wifi_tui::scanner::{create_scanner, NetworkInfo, ScanError};
 
 /// Maximum number of log entries to keep
@@ -24,6 +22,7 @@ pub struct LogEntry {
 }
 
 #[derive(Clone, Copy, PartialEq)]
+#[allow(dead_code)] // All levels defined for completeness
 pub enum LogLevel {
     Info,
     Warn,
@@ -140,14 +139,25 @@ impl App {
         }
     }
 
+    /// Minimum interval between scans to avoid "Resource busy" errors
+    const MIN_SCAN_INTERVAL: Duration = Duration::from_secs(3);
+
     /// Start a background scan
-    #[instrument(skip(self))]
     pub fn start_scan(&mut self) {
         if self.scanning {
+            push_log(&self.log_buffer, LogLevel::Debug, "Scan already in progress, skipping".into());
             return; // Already scanning
         }
 
-        info!("Initiating background WiFi scan");
+        // Prevent rapid rescanning which causes "Resource busy" errors
+        if let Some(last) = self.last_scan {
+            if last.elapsed() < Self::MIN_SCAN_INTERVAL {
+                push_log(&self.log_buffer, LogLevel::Debug,
+                    "Please wait a few seconds between scans".into());
+                return;
+            }
+        }
+
         push_log(&self.log_buffer, LogLevel::Info, "Starting WiFi scan...".into());
 
         self.scanning = true;
@@ -172,7 +182,6 @@ impl App {
                 }
                 Err(e) => {
                     push_log(&log_buffer, LogLevel::Error, format!("Scan failed: {}", e));
-                    error!(error = %e, "Scan failed");
                     let _ = tx.send(ScanMessage::Error(e));
                 }
             }
@@ -191,8 +200,6 @@ impl App {
                 push_log(&self.log_buffer, LogLevel::Debug, "Scan thread started".into());
             }
             Ok(ScanMessage::Complete(mut networks)) => {
-                info!(count = networks.len(), "Scan complete, updating network list");
-
                 // Log each network found
                 for net in &networks {
                     push_log(&self.log_buffer, LogLevel::Debug, format!(
@@ -203,6 +210,17 @@ impl App {
 
                 // Sort by signal strength (strongest first)
                 networks.sort_by(|a, b| b.signal_dbm.cmp(&a.signal_dbm));
+
+                // Check for permission issue (0 networks on macOS usually means no location permission)
+                #[cfg(target_os = "macos")]
+                if networks.is_empty() {
+                    push_log(&self.log_buffer, LogLevel::Warn,
+                        "No networks found - Location Services may be required".into());
+                    push_log(&self.log_buffer, LogLevel::Info,
+                        "Go to System Settings > Privacy & Security > Location Services".into());
+                    push_log(&self.log_buffer, LogLevel::Info,
+                        "Enable location access for Terminal or your IDE".into());
+                }
 
                 self.networks = networks;
                 self.scanning = false;
@@ -277,6 +295,7 @@ impl App {
     }
 
     /// Get the currently selected network (if any)
+    #[allow(dead_code)] // API for future network details view
     pub fn selected_network(&self) -> Option<&NetworkInfo> {
         self.networks.get(self.selected)
     }
