@@ -2,7 +2,7 @@
 
 A cross-platform terminal user interface for discovering and listing nearby WiFi networks.
 
-![WiFi TUI Demo](https://pub-519a746174a34ddbaff37b6eb4ee1a9c.r2.dev/wifi-tui2.gif)
+![WiFi TUI Demo](https://normal.t3.storage.dev/wifi-tui2.gif)
 
 > **Development OS:** macOS 14 (Sonoma) on a 2019 MacBook Pro
 
@@ -26,21 +26,21 @@ cargo build --release
 
 ## Controls
 
-| Key | Action |
-|-----|--------|
-| `r` | Refresh/rescan networks |
-| `j` / `↓` | Move selection down |
-| `k` / `↑` | Move selection up |
-| `l` | Toggle log panel |
-| `q` / `Esc` | Quit |
+| Key         | Action                  |
+| ----------- | ----------------------- |
+| `r`         | Refresh/rescan networks |
+| `j` / `↓`   | Move selection down     |
+| `k` / `↑`   | Move selection up       |
+| `l`         | Toggle log panel        |
+| `q` / `Esc` | Quit                    |
 
 ## Platform Support
 
-| Platform | Implementation | Status |
-|----------|---------------|--------|
-| macOS | `system_profiler SPAirPortDataType` | ✅ Working |
-| Linux | `nmcli` (NetworkManager) / `iw` fallback | ✅ Implemented |
-| Windows | `wlanapi.dll` raw FFI | ✅ Implemented |
+| Platform | Implementation                           | Status         |
+| -------- | ---------------------------------------- | -------------- |
+| macOS    | `system_profiler SPAirPortDataType`      | ✅ Working     |
+| Linux    | `nmcli` (NetworkManager) / `iw` fallback | ✅ Implemented |
+| Windows  | `wlanapi.dll` raw FFI                    | ✅ Implemented |
 
 ### Linux Notes
 
@@ -80,6 +80,7 @@ src/
 **Why not CoreWLAN on macOS?**
 
 CoreWLAN requires Location Services permission, which is problematic for CLI tools:
+
 - CLI tools can't reliably trigger the permission dialog
 - They inherit permissions from the parent terminal app
 - Most terminals don't have Location permission by default
@@ -107,6 +108,7 @@ The Windows implementation (`src/scanner/windows.rs`) uses raw FFI to the Native
 4. **Struct Layout** - All structs use `#[repr(C)]` with field order matching [official Microsoft documentation](https://learn.microsoft.com/en-us/windows/win32/api/wlanapi/)
 
 **API functions used:**
+
 - `WlanOpenHandle` / `WlanCloseHandle` - Connection lifecycle
 - `WlanEnumInterfaces` - Discover wireless adapters
 - `WlanScan` - Trigger fresh network scan
@@ -120,6 +122,7 @@ Both macOS and Linux implementations use safe Rust only, spawning system command
 ## Dependencies
 
 Only three crates as required:
+
 - `ratatui` - TUI framework
 - `crossterm` - Terminal backend
 - `tracing` / `tracing-subscriber` - Structured logging
@@ -133,6 +136,7 @@ cargo run --bin scan-test
 ```
 
 Example output:
+
 ```
 WiFi available: true
 Interface: en0
@@ -148,22 +152,27 @@ Found 4 networks:
 ## Requirements
 
 ### macOS
+
 - macOS 10.15+ (Catalina or later)
 - WiFi hardware enabled
 
 ### Linux
+
 - NetworkManager (for non-root scanning) or `iw` package
 - WiFi hardware enabled
 
 ### Windows
+
 - Windows 7 or later
 - WLAN AutoConfig service running (default on Windows)
 - WiFi hardware enabled
 
 ### All Platforms
+
 - Rust 1.70+
 
 ## Future Improvements
+
 - **Connect to networks** - Allow users to select a network and connect directly from the TUI
 - **Password input** - Secure text input for entering WPA/WPA2/WPA3 credentials
 - **Forget networks** - Remove saved network profiles
