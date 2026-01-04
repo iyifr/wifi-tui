@@ -72,6 +72,16 @@ impl NetworkInfo {
             _ => "░░░░",
         }
     }
+
+    /// Get the frequency band based on channel number
+    pub fn frequency_band(&self) -> &'static str {
+        match self.channel {
+            1..=14 => "2.4GHz",
+            32..=177 => "5GHz",
+            _ if self.channel > 177 => "6GHz",
+            _ => "?",
+        }
+    }
 }
 
 /// Scanner error types unified across platforms

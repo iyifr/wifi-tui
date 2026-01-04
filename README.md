@@ -2,6 +2,8 @@
 
 A cross-platform terminal user interface for discovering and listing nearby WiFi networks.
 
+![WiFi TUI Demo](gif/wifi-tui.gif)
+
 ## Features
 
 - Real-time WiFi network scanning
@@ -68,7 +70,7 @@ src/
     ├── mod.rs        # Scanner trait, types
     ├── macos.rs      # macOS: system_profiler
     ├── linux.rs      # Linux: nmcli / iw
-    └── windows.rs    # Windows: wlanapi.dll (planned)
+    └── windows.rs    # Windows: wlanapi.dll
 ```
 
 ### Design Decisions

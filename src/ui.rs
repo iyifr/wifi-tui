@@ -84,7 +84,7 @@ fn render_network_table(frame: &mut Frame, app: &mut App, area: Rect) {
     app.adjust_scroll(visible_rows);
 
     // Table headers
-    let header_cells = ["SSID", "Signal", "Ch", "Security"]
+    let header_cells = ["SSID", "Signal", "Band", "Security"]
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
 
@@ -99,12 +99,14 @@ fn render_network_table(frame: &mut Frame, app: &mut App, area: Rect) {
         .map(|network| {
             let signal_color = signal_color(network.signal_dbm);
             let security_color = security_color(&network.security);
+            let band_color = band_color(network.channel);
 
             Row::new(vec![
                 Cell::from(truncate_ssid(&network.ssid, 24)),
                 Cell::from(format!("{} {:>3}dBm", network.signal_bars(), network.signal_dbm))
                     .style(Style::default().fg(signal_color)),
-                Cell::from(format!("{:>3}", network.channel)),
+                Cell::from(network.frequency_band())
+                    .style(Style::default().fg(band_color)),
                 Cell::from(network.security.to_string())
                     .style(Style::default().fg(security_color)),
             ])
@@ -116,7 +118,7 @@ fn render_network_table(frame: &mut Frame, app: &mut App, area: Rect) {
         [
             Constraint::Min(26),        // SSID
             Constraint::Length(13),     // Signal
-            Constraint::Length(4),      // Channel
+            Constraint::Length(7),      // Band (2.4GHz/5GHz)
             Constraint::Length(10),     // Security
         ],
     )
@@ -220,6 +222,15 @@ fn signal_color(dbm: i32) -> Color {
         -70..=-61 => Color::Yellow,     // Fair
         -80..=-71 => Color::LightRed,   // Weak
         _ => Color::Red,                // Very weak
+    }
+}
+
+/// Get color based on frequency band
+fn band_color(channel: u8) -> Color {
+    match channel {
+        1..=14 => Color::Cyan,       // 2.4GHz
+        32..=177 => Color::Magenta,  // 5GHz
+        _ => Color::Blue,            // 6GHz or unknown
     }
 }
 

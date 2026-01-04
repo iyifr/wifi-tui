@@ -15,9 +15,9 @@ fn main() {
             println!("\nFound {} networks:\n", networks.len());
             for net in &networks {
                 println!(
-                    "  {} | Ch:{:>3} | {:>4} dBm | {} | {}",
+                    "  {} | {:>6} | {:>4} dBm | {} | {}",
                     net.signal_bars(),
-                    net.channel,
+                    net.frequency_band(),
                     net.signal_dbm,
                     net.security,
                     net.ssid
