@@ -4,6 +4,8 @@ A cross-platform terminal user interface for discovering and listing nearby WiFi
 
 ![WiFi TUI Demo](gif/wifi-tui.gif)
 
+> **Development OS:** macOS 14 (Sonoma) on a 2019 MacBook Pro
+
 ## Features
 
 - Real-time WiFi network scanning
@@ -88,6 +90,33 @@ See [ffi.md](./ffi.md) for detailed documentation.
 
 `system_profiler SPAirPortDataType` provides WiFi network information without requiring Location Services or root access.
 
+## Unsafe Code & FFI
+
+### Windows: Raw FFI to wlanapi.dll
+
+The Windows implementation (`src/scanner/windows.rs`) uses raw FFI to the Native WiFi API. This was chosen to demonstrate FFI skills without relying on external crates like `windows-sys`.
+
+**Safety measures implemented:**
+
+1. **RAII Handle Management** - `WlanHandle` wrapper ensures `WlanCloseHandle` is always called via `Drop`, even on error paths
+
+2. **Memory Management** - All Windows-allocated memory (`WLAN_INTERFACE_INFO_LIST`, `WLAN_AVAILABLE_NETWORK_LIST`, `WLAN_BSS_LIST`) is freed with `WlanFreeMemory` before returning
+
+3. **Pointer Validation** - Return codes checked before dereferencing pointers; `ERROR_SUCCESS` required
+
+4. **Struct Layout** - All structs use `#[repr(C)]` with field order matching [official Microsoft documentation](https://learn.microsoft.com/en-us/windows/win32/api/wlanapi/)
+
+**API functions used:**
+- `WlanOpenHandle` / `WlanCloseHandle` - Connection lifecycle
+- `WlanEnumInterfaces` - Discover wireless adapters
+- `WlanScan` - Trigger fresh network scan
+- `WlanGetAvailableNetworkList` - Get visible networks
+- `WlanGetNetworkBssList` - Get BSSID and channel info
+
+### macOS & Linux: No Unsafe Code
+
+Both macOS and Linux implementations use safe Rust only, spawning system commands (`system_profiler`, `nmcli`, `iw`) and parsing their text output. See [ffi.md](./ffi.md) for why CoreWLAN FFI was abandoned on macOS.
+
 ## Dependencies
 
 Only three crates as required:
@@ -110,10 +139,10 @@ Interface: en0
 
 Found 4 networks:
 
-  ████ | Ch:  2 |  -50 dBm | WPA2 | MyNetwork
-  ███░ | Ch:  6 |  -65 dBm | WPA2 | CoffeeShop
-  ██░░ | Ch:  3 |  -76 dBm | WPA2 | Neighbor
-  █░░░ | Ch: 11 |  -85 dBm | Open | FreeWiFi
+  ████ | 2.4GHz |  -50 dBm | WPA2 | MyNetwork
+  ███░ |  5GHz  |  -65 dBm | WPA2 | CoffeeShop
+  ██░░ | 2.4GHz |  -76 dBm | WPA2 | Neighbor
+  █░░░ | 2.4GHz |  -85 dBm | Open | FreeWiFi
 ```
 
 ## Requirements
@@ -133,3 +162,11 @@ Found 4 networks:
 
 ### All Platforms
 - Rust 1.70+
+
+## Future Improvements
+- **Connect to networks** - Allow users to select a network and connect directly from the TUI
+- **Password input** - Secure text input for entering WPA/WPA2/WPA3 credentials
+- **Forget networks** - Remove saved network profiles
+- **Network details view** - Expandable panel showing BSSID, exact channel, PHY mode, and more
+- **Auto-refresh** - Configurable automatic rescanning interval
+- **Signal history graph** - Track signal strength over time for selected network
