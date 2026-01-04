@@ -2,7 +2,7 @@
 
 A cross-platform terminal user interface for discovering and listing nearby WiFi networks.
 
-![WiFi TUI Demo](https://normal.t3.storage.dev/wifi-tui2.gif)
+![Wifi Tui demo](media/wifi-tui.mp4)
 
 > **Development OS:** macOS 14 (Sonoma) on a 2019 MacBook Pro
 
