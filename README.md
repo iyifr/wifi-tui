@@ -2,9 +2,7 @@
 
 A cross-platform terminal user interface for discovering and listing nearby WiFi networks.
 
-![Wifi Tui demo](media/wif-tui.mp4)
-
-> **Development OS:** macOS 14 (Sonoma) on a 2019 MacBook Pro
+https://github.com/user-attachments/assets/33982f56-7ad3-487d-9fed-b6d65d0ed37d
 
 ## Features
 
@@ -38,7 +36,7 @@ cargo build --release
 
 | Platform | Implementation                           | Status         |
 | -------- | ---------------------------------------- | -------------- |
-| macOS    | `system_profiler SPAirPortDataType`      | ✅ Working     |
+| macOS    | `system_profiler SPAirPortDataType`      | ✅ Implemented |
 | Linux    | `nmcli` (NetworkManager) / `iw` fallback | ✅ Implemented |
 | Windows  | `wlanapi.dll` raw FFI                    | ✅ Implemented |
 
@@ -49,7 +47,7 @@ The Linux scanner uses two methods:
 1. **nmcli** (preferred) - Works without root on systems with NetworkManager
 2. **iw** (fallback) - Requires root privileges (`sudo wifi-tui`)
 
-Most desktop distributions (Ubuntu, Fedora, etc.) have NetworkManager pre-installed.
+Most desktop distributions (Ubuntu, Fedora, etc.) pre-install NetworkManager.
 
 ### Windows Notes
 
